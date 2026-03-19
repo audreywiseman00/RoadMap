@@ -1,5 +1,12 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
 import newspaper
 import spacy
+
+from source import SourceObject
+from extracted_data import ExtractedData
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -20,6 +27,9 @@ class ArticleParser:
     def get_text(self):
         return self.article.text
     
+    def get_source_object(self):
+        return SourceObject(url=self.url, title=self.get_title(), type="article")
+    
     
     def extract_travel_data(self):
         doc = nlp(self.get_text())
@@ -31,13 +41,14 @@ class ArticleParser:
         location_sentences = [sent.text.strip() for sent in doc.sents
                             if any(e.label_ in ("GPE", "LOC") for e in sent.ents)]
 
-        return {
-            "locations": locations,
-            "orgs": orgs,
-            "price_signals": price_signals,
-            "activities": activities,
-            "location_context": location_sentences
-        }
+        return ExtractedData(
+            source=self.get_source_object(),
+            locations=locations,
+            orgs=orgs,
+            activities=activities,
+            signals=price_signals,
+            context=location_sentences
+        )
     
 def main():
     url = "https://www.bbc.com/travel/article/20260312-10-things-all-visitors-to-japan-should-know"
