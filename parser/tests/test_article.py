@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import Mock, patch, MagicMock
 import sys
 import os
-from article_parser.article_parser import ArticleParser
+from parser.article import ArticleParser
 from source import SourceObject
 from extracted_data import ExtractedData
 
