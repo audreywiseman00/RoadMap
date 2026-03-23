@@ -5,8 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import newspaper
 import spacy
 
-from source import SourceObject
-from extracted_data import ExtractedData
+from parser.models import SourceObject, ExtractedData
 
 nlp = spacy.load("en_core_web_sm")
 

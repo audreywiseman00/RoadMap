@@ -1,14 +1,8 @@
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
 import unittest
 from unittest.mock import Mock, patch, MagicMock
-import sys
-import os
+
 from parser.article import ArticleParser
-from source import SourceObject
-from extracted_data import ExtractedData
+from parser.models import SourceObject, ExtractedData
 
 
 

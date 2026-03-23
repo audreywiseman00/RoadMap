@@ -1,10 +1,5 @@
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
 import unittest
-from parser.source import SourceObject
-from parser.extracted_data import ExtractedData
+from parser.models import SourceObject, ExtractedData
 
 class TestExtractedData(unittest.TestCase):
 
