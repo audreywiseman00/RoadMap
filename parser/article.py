@@ -1,11 +1,7 @@
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
 import newspaper
 import spacy
 
-from parser.models import SourceObject, ExtractedData
+from .models import SourceObject, ExtractedData
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -31,6 +27,7 @@ class ArticleParser:
     
     
     def extract_travel_data(self):
+        self.parse()  # Ensure article is parsed before extracting
         doc = nlp(self.get_text())
 
         locations = list({ent.text for ent in doc.ents if ent.label_ in ("GPE", "LOC")})
@@ -46,7 +43,8 @@ class ArticleParser:
             orgs=orgs,
             activities=activities,
             signals=price_signals,
-            context=location_sentences
+            context=location_sentences,
+            raw_text=self.get_text()
         )
     
 def main():

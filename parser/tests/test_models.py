@@ -21,11 +21,11 @@ class TestExtractedData(unittest.TestCase):
         self.assertEqual(self.data.activities, [])
         self.assertEqual(self.data.signals, [])
         self.assertEqual(self.data.context, [])
-        self.assertIsNone(self.data.confidence)
+        self.assertIsNotNone(self.data.confidence)  # confidence is now always created
 
     def test_init_with_values(self):
         self.assertEqual(self.data_with_values.source, "test_source")
-        self.assertEqual(self.data_with_values.locations, ["New York", "London"])
+        self.assertEqual([loc.name for loc in self.data_with_values.locations], ["New York", "London"])
         self.assertEqual(self.data_with_values.orgs, ["Company A", "Company B"])
 
     def test_get_source(self):
@@ -33,7 +33,7 @@ class TestExtractedData(unittest.TestCase):
         self.assertIsNone(self.data.get_source())
 
     def test_get_locations(self):
-        self.assertEqual(self.data_with_values.get_locations(), ["New York", "London"])
+        self.assertEqual([loc.name for loc in self.data_with_values.get_locations()], ["New York", "London"])
         self.assertEqual(self.data.get_locations(), [])
 
     def test_get_activities(self):

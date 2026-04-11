@@ -81,8 +81,8 @@ class TestArticleParser(unittest.TestCase):
         result = parser.extract_travel_data()
         
         self.assertIsInstance(result, ExtractedData)
-        self.assertIn("Paris", result.locations)
-        self.assertIn("London", result.locations)
+        self.assertIn("Paris", [loc.name for loc in result.locations])
+        self.assertIn("London", [loc.name for loc in result.locations])
         self.assertIn("200", result.signals)
 
 
