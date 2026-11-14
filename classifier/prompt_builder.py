@@ -2,7 +2,7 @@ from classifier.models import UserPreferences
 from parser.models import ExtractedData
 
 class PromptBuilder:
-    def build(self, content: ExtractedContent, preferences: UserPreferences, context_cap: int = 2) -> str:
+    def build(self, content: ExtractedData, preferences: UserPreferences, context_cap: int = 2) -> str:
         context_sentences = [
             sentence
             for location in content.locations

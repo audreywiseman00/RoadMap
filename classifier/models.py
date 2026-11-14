@@ -8,6 +8,7 @@ class TripType(Enum):
     CULTURAL = "cultural"
     FOOD = "food"
     RELAXATION = "relaxation"
+    LEISURE = "leisure"
     MIXED = "mixed"
 
 class BudgetTier(Enum):
@@ -62,6 +63,7 @@ class ClassifiedTrip:
     model_used: str                     # e.g. "claude-sonnet-4-6"
     classified_at: str                  # ISO timestamp
 
+    @property
     def primary_destination(self) -> str:
         return self.result.primary_destination
 
@@ -72,5 +74,26 @@ class ClassifiedTrip:
             and bool(self.result.primary_destination)
         )
 
-    def clarification_needed(self) -> list[str]:
+    @property
+    def clarification_questions(self) -> list[str]:
         return self.result.clarification_questions if self.result.needs_clarification else []
+
+    @property
+    def trip_type(self):
+        return self.result.trip_type
+
+    @property
+    def budget_tier(self):
+        return self.result.budget_tier
+
+    @property
+    def recommended_days(self):
+        return self.result.recommended_days
+
+    @property
+    def needs_clarification(self):
+        return self.result.needs_clarification
+
+    @property
+    def classification_confidence(self):
+        return self.result.confidence

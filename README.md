@@ -57,6 +57,25 @@ python -m spacy download en_core_web_sm
 > pip install lxml[html_clean]
 > ```
 
+### Try the parser
+
+With the virtual environment activated and the dependencies installed, run this from the repository root. Replace the example URL with a publicly accessible travel article:
+
+```bash
+python - <<'PY'
+from parser.pipeline import ParserPipeline
+
+url = "https://example.com/travel-article"
+result = ParserPipeline().run(url)
+
+print("Title:", result.get_source().title)
+print("Locations:", [location.name for location in result.get_locations()])
+print("Activities:", result.get_activities())
+PY
+```
+
+The parser fetches the article, so this demo requires an internet connection.
+
 ---
 
 ## Core Parsing Module
