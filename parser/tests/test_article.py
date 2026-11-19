@@ -59,31 +59,47 @@ class TestArticleParser(unittest.TestCase):
         self.assertEqual(source.title, "Test Title")
         self.assertEqual(source.type, "article")
 
+    @patch('parser.article.nlp')
     @patch('newspaper.Article')
-    @patch('spacy.load')
-    def test_extract_travel_data(self, mock_spacy, mock_article):
+    def test_extract_travel_data(self, mock_article, mock_nlp):
         mock_instance = MagicMock()
         mock_instance.text = "Paris and London are cities. Hotel costs $200."
         mock_article.return_value = mock_instance
         
-        mock_nlp = MagicMock()
-        mock_spacy.return_value = mock_nlp
-        
         mock_ent1 = Mock(text="Paris", label_="GPE")
-        mock_ent2 = Mock(text="London", label_="GPE")
-        mock_ent3 = Mock(text="$200", label_="MONEY")
+        repeated_paris = Mock(text="Paris", label_="GPE")
+        london = Mock(text="London", label_="GPE")
+        money = Mock(text="$200", label_="MONEY")
         
         mock_doc = MagicMock()
-        mock_doc.ents = [mock_ent1, mock_ent2, mock_ent3]
+        mock_doc.ents = [mock_ent1, repeated_paris, london, money]
+        paris_sentence = Mock(
+            text="Paris and London are cities.",
+            ents=[mock_ent1, london],
+        )
+        repeated_sentence = Mock(
+            text="Paris is known for its cafes.",
+            ents=[repeated_paris],
+        )
+        mock_doc.sents = [paris_sentence, repeated_sentence]
+        mock_doc.noun_chunks = []
         mock_nlp.return_value = mock_doc
         
         parser = ArticleParser(self.url)
         result = parser.extract_travel_data()
         
         self.assertIsInstance(result, ExtractedData)
-        self.assertIn("Paris", [loc.name for loc in result.locations])
-        self.assertIn("London", [loc.name for loc in result.locations])
-        self.assertIn("200", result.signals)
+        locations = {location.name: location for location in result.locations}
+        self.assertEqual(list(locations), ["Paris", "London"])
+        self.assertEqual(locations["Paris"].frequency, 2)
+        self.assertEqual(
+            locations["Paris"].context,
+            ["Paris and London are cities.", "Paris is known for its cafes."],
+        )
+        self.assertEqual(locations["London"].context, ["Paris and London are cities."])
+        self.assertEqual(result.signals.price, ["$200"])
+        self.assertEqual(result.signals.vibe, [])
+        self.assertEqual(result.signals.season, [])
 
 
 if __name__ == '__main__':

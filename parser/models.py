@@ -1,3 +1,4 @@
+from dataclasses import dataclass, field
 from enum import Enum
 
 class ContentType(Enum):
@@ -12,10 +13,6 @@ class Confidence:
         self.needs_user_clarification = False
         self.clarification_reason = None
 
-class Location:
-    def __init__(self, name):
-        self.name = name
-
 class SourceObject:
     
     def __init__(self, url=None, title=None, type=None):
@@ -25,24 +22,35 @@ class SourceObject:
         self.timestamp = None
         self.content_type = ContentType.ARTICLE if type == "article" else None
 
-class ExtractedData:
+@dataclass
+class LocationMention:
+    name: str
+    label: str
+    frequency: int = 1
+    context: list[str] = field(default_factory=list)
 
-    def __init__(self, source=None, locations=[], orgs = [], activities=[], signals=[], context = [], raw_text=""):
-        self.source = source
-        self.locations = [Location(loc) for loc in locations]  # Convert strings to Location objects
-        self.orgs = orgs
-        self.activities = activities
-        self.signals = signals
-        self.context = context
-        self.raw_text = raw_text
-        self.confidence = Confidence()
-        
-        # Set confidence flags
-        if not self.locations:
-            self.confidence.needs_user_clarification = True
-            self.confidence.clarification_reason = "No locations detected"
-        elif len(self.locations) == 1:
-            self.confidence.primary_destination_clear = True
+@dataclass
+class TravelSignals:
+    price: list[str] = field(default_factory=list)
+    vibe: list[str] = field(default_factory=list)
+    season: list[str] = field(default_factory=list)
+
+@dataclass
+class ExtractedData:
+    source: SourceObject | None = None
+    locations: list[LocationMention] = field(default_factory=list)
+    orgs: list[str] = field(default_factory=list)
+    activities: list[str] = field(default_factory=list)
+    signals: TravelSignals = field(default_factory=TravelSignals)
+    raw_text: str = ""
+    confidence: Confidence = field(init=False, default_factory=Confidence)
+
+    def __post_init__(self):
+        self.confidence.primary_destination_clear = len(self.locations) == 1
+        self.confidence.needs_user_clarification = not self.locations
+        self.confidence.clarification_reason = (
+            "No locations detected" if not self.locations else None
+        )
 
     def get_source(self):
         return self.source

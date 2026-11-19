@@ -1,17 +1,24 @@
 import unittest
-from parser.models import SourceObject, ExtractedData
+from parser.models import (
+    ExtractedData,
+    LocationMention,
+    SourceObject,
+    TravelSignals,
+)
 
 class TestExtractedData(unittest.TestCase):
 
     def setUp(self):
         self.data = ExtractedData()
         self.data_with_values = ExtractedData(
-            source="test_source",
-            locations=["New York", "London"],
+            source=SourceObject(title="Test source"),
+            locations=[
+                LocationMention("New York", "GPE"),
+                LocationMention("London", "GPE"),
+            ],
             orgs=["Company A", "Company B"],
             activities=["Activity 1"],
-            signals=["Signal 1"],
-            context=["Context 1"]
+            signals=TravelSignals(price=["Signal 1"])
         )
 
     def test_init_default_values(self):
@@ -19,17 +26,26 @@ class TestExtractedData(unittest.TestCase):
         self.assertEqual(self.data.locations, [])
         self.assertEqual(self.data.orgs, [])
         self.assertEqual(self.data.activities, [])
-        self.assertEqual(self.data.signals, [])
-        self.assertEqual(self.data.context, [])
-        self.assertIsNotNone(self.data.confidence)  # confidence is now always created
+        self.assertEqual(self.data.signals, TravelSignals())
+        self.assertIsNotNone(self.data.confidence)
+        self.assertTrue(self.data.confidence.needs_user_clarification)
+        self.assertEqual(self.data.confidence.clarification_reason, "No locations detected")
 
     def test_init_with_values(self):
-        self.assertEqual(self.data_with_values.source, "test_source")
+        self.assertEqual(self.data_with_values.source.title, "Test source")
         self.assertEqual([loc.name for loc in self.data_with_values.locations], ["New York", "London"])
         self.assertEqual(self.data_with_values.orgs, ["Company A", "Company B"])
+        self.assertFalse(self.data_with_values.confidence.needs_user_clarification)
+        self.assertFalse(self.data_with_values.confidence.primary_destination_clear)
+
+    def test_single_location_is_marked_as_clear(self):
+        data = ExtractedData(locations=[LocationMention("Paris", "GPE")])
+
+        self.assertTrue(data.confidence.primary_destination_clear)
+        self.assertFalse(data.confidence.needs_user_clarification)
 
     def test_get_source(self):
-        self.assertEqual(self.data_with_values.get_source(), "test_source")
+        self.assertEqual(self.data_with_values.get_source().title, "Test source")
         self.assertIsNone(self.data.get_source())
 
     def test_get_locations(self):
@@ -41,8 +57,8 @@ class TestExtractedData(unittest.TestCase):
         self.assertEqual(self.data.get_activities(), [])
 
     def test_get_signals(self):
-        self.assertEqual(self.data_with_values.get_signals(), ["Signal 1"])
-        self.assertEqual(self.data.get_signals(), [])
+        self.assertEqual(self.data_with_values.get_signals().price, ["Signal 1"])
+        self.assertEqual(self.data.get_signals(), TravelSignals())
 
 
 class TestSourceObject(unittest.TestCase):

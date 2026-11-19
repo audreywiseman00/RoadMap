@@ -1,7 +1,7 @@
 import newspaper
 import spacy
 
-from .models import SourceObject, ExtractedData
+from .models import ExtractedData, LocationMention, SourceObject, TravelSignals
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -30,20 +30,43 @@ class ArticleParser:
         self.parse()  # Ensure article is parsed before extracting
         doc = nlp(self.get_text())
 
-        locations = list({ent.text for ent in doc.ents if ent.label_ in ("GPE", "LOC")})
-        orgs = list({ent.text for ent in doc.ents if ent.label_ == "ORG"})
+        locations_by_name = {}
+        for ent in doc.ents:
+            if ent.label_ not in ("GPE", "LOC"):
+                continue
+            key = ent.text.strip().casefold()
+            mention = locations_by_name.get(key)
+            if mention is None:
+                mention = LocationMention(name=ent.text, label=ent.label_)
+                locations_by_name[key] = mention
+            else:
+                mention.frequency += 1
+
+        for sent in doc.sents:
+            sentence = sent.text.strip()
+            if not sentence:
+                continue
+            for ent in sent.ents:
+                if ent.label_ not in ("GPE", "LOC"):
+                    continue
+                mention = locations_by_name.get(ent.text.strip().casefold())
+                if mention is not None and sentence not in mention.context:
+                    mention.context.append(sentence)
+
+        orgs = list(dict.fromkeys(
+            ent.text for ent in doc.ents if ent.label_ == "ORG"
+        ))
         price_signals = [ent.text for ent in doc.ents if ent.label_ == "MONEY"]
-        activities = list({chunk.text for chunk in doc.noun_chunks if len(chunk.text.split()) > 1})
-        location_sentences = [sent.text.strip() for sent in doc.sents
-                            if any(e.label_ in ("GPE", "LOC") for e in sent.ents)]
+        activities = list(dict.fromkeys(
+            chunk.text for chunk in doc.noun_chunks if len(chunk.text.split()) > 1
+        ))
 
         return ExtractedData(
             source=self.get_source_object(),
-            locations=locations,
+            locations=list(locations_by_name.values()),
             orgs=orgs,
             activities=activities,
-            signals=price_signals,
-            context=location_sentences,
+            signals=TravelSignals(price=price_signals),
             raw_text=self.get_text()
         )
     

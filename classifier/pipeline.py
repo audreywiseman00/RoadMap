@@ -21,24 +21,22 @@ class ClassificationPipeline:
         self.prompt_builder = PromptBuilder()
 
     def run(self, content: ExtractedData, preferences: UserPreferences) -> ClassifiedTrip:
-        prompt = self.prompt_builder.build(
-            content,
-            preferences,
-            context_cap=self.CONTEXT_SENTENCES_PER_LOCATION
-        )
-        # Gate 1: check parser confidence before doing anything
+        # Gate 1: check parser confidence before building a prompt or calling the model.
         if content.confidence.needs_user_clarification:
             return self._needs_clarification(content, preferences, [
                 content.confidence.clarification_reason
             ])
 
-        # Gate 2: check we have enough to classify
+        # Gate 2: check we have enough to classify.
         validation_issues = self._validate_inputs(content, preferences)
         if validation_issues:
             return self._needs_clarification(content, preferences, validation_issues)
 
-        # Run classification with retry
-        prompt = self.prompt_builder.build(content, preferences)
+        prompt = self.prompt_builder.build(
+            content,
+            preferences,
+            context_cap=self.CONTEXT_SENTENCES_PER_LOCATION
+        )
         raw_result = self._call_with_retry(prompt)
 
         if raw_result is None:

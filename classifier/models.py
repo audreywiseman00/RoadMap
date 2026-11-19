@@ -17,16 +17,6 @@ class BudgetTier(Enum):
     LUXURY = "luxury"
 
 @dataclass
-class LocationMention:
-    name: str
-    label: str
-    frequency: int
-    sentiment_context: list[str] = field(default_factory=list)
-
-    def capped_context(self, max_sentences: int = 2) -> list[str]:
-        return self.sentiment_context[:max_sentences]
-
-@dataclass
 class UserPreferences:
     group_size: int = 1
     start_date: Optional[str] = None

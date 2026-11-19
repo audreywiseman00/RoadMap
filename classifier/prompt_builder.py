@@ -6,7 +6,7 @@ class PromptBuilder:
         context_sentences = [
             sentence
             for location in content.locations
-            for sentence in location.capped_context(max_sentences=context_cap)
+            for sentence in location.context[:context_cap]
         ]
 
         # deduplicate in case the same sentence appears under multiple locations
@@ -21,7 +21,7 @@ class PromptBuilder:
 You are classifying travel content to generate a vacation itinerary.
 
 DETECTED CONTENT:
-Locations: {content.locations}
+Locations: {[location.name for location in content.locations]}
 Activities: {content.activities}
 Price signals: {content.signals.price}
 Vibe signals: {content.signals.vibe}

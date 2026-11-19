@@ -101,33 +101,7 @@ def parse_article(url):
 
 ### Travel data extractor
 
-Uses spaCy to extract locations, activities, price signals, and contextual sentences from article text:
-
-```python
-import spacy
-
-nlp = spacy.load("en_core_web_sm")
-
-def extract_travel_data(text):
-    doc = nlp(text)
-
-    locations = list({ent.text for ent in doc.ents if ent.label_ in ("GPE", "LOC")})
-    orgs = list({ent.text for ent in doc.ents if ent.label_ == "ORG"})
-    price_signals = [ent.text for ent in doc.ents if ent.label_ == "MONEY"]
-    activities = list({chunk.text for chunk in doc.noun_chunks if len(chunk.text.split()) > 1})
-    location_context = [
-        sent.text.strip() for sent in doc.sents
-        if any(e.label_ in ("GPE", "LOC") for e in sent.ents)
-    ]
-
-    return {
-        "locations": locations,
-        "orgs": orgs,
-        "price_signals": price_signals,
-        "activities": activities,
-        "location_context": location_context
-    }
-```
+`ArticleParser.extract_travel_data()` uses spaCy to extract locations, activities, price signals, and contextual sentences. It returns an `ExtractedData` object; the current output shape is shown below.
 
 ### spaCy entity labels used
 
@@ -151,19 +125,46 @@ The parser returns a structured object passed downstream to the Phase 2 AI layer
 
 ```json
 {
-  "title": "10 Days in Japan: The Ultimate Itinerary",
-  "locations": ["Tokyo", "Kyoto", "Osaka"],
+  "source": {
+    "url": "https://example.com/japan-guide",
+    "title": "10 Days in Japan: The Ultimate Itinerary",
+    "type": "article"
+  },
+  "locations": [
+    {
+      "name": "Tokyo",
+      "label": "GPE",
+      "frequency": 4,
+      "context": [
+        "Spend your first three days in Tokyo exploring Shibuya and Shinjuku."
+      ]
+    },
+    {
+      "name": "Kyoto",
+      "label": "GPE",
+      "frequency": 2,
+      "context": [
+        "Kyoto is best visited in spring when the cherry blossoms are in bloom."
+      ]
+    }
+  ],
   "orgs": ["Tsukiji Market", "Fushimi Inari Shrine"],
-  "price_signals": ["¥1,200", "under $50"],
   "activities": ["ramen tasting", "bullet train ride", "temple walk"],
-  "location_context": [
-    "Spend your first three days in Tokyo exploring Shibuya and Shinjuku.",
-    "Kyoto is best visited in spring when the cherry blossoms are in bloom."
-  ]
+  "signals": {
+    "price": ["¥1,200", "under $50"],
+    "vibe": [],
+    "season": []
+  },
+  "raw_text": "...",
+  "confidence": {
+    "primary_destination_clear": false,
+    "needs_user_clarification": false,
+    "clarification_reason": null
+  }
 }
 ```
 
-The `location_context` field is the most valuable for the downstream AI step — it gives sentence-level context for how each place is described.
+Each location carries its own context sentences, so the downstream AI step can cap context per place instead of receiving an unassociated sentence list. Price signals are currently extracted; vibe and season fields are present but remain empty until extraction support is added.
 
 ---
 
