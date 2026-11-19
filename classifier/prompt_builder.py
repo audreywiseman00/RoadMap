@@ -32,19 +32,19 @@ KEY CONTEXT SENTENCES:
 
 USER PREFERENCES:
 Group size: {preferences.group_size}
-Budget: {preferences.budget_tier or "not specified"}
-Travel style: {preferences.travel_style or "not specified"}
+Budget: {preferences.budget_tier.value if preferences.budget_tier else "not specified"}
+Travel style: {preferences.travel_style.value if preferences.travel_style else "not specified"}
 Trip length: {preferences.start_date} to {preferences.end_date or "not specified"}
 
 Respond in JSON only. No preamble. Schema:
 {{
     "primary_destination": "string",
     "secondary_destinations": ["string"],
-    "trip_type": "adventure|cultural|food|relaxation|mixed",
+    "trip_type": "adventure|cultural|food|leisure|relaxation|mixed",
     "budget_tier": "budget|mid_range|luxury",
-    "recommended_days": number,
+    "recommended_days": "non-negative integer",
     "top_activities": ["string"],
-    "classification_confidence": number between 0 and 1,
+    "confidence": "number between 0 and 1",
     "needs_clarification": boolean,
     "clarification_questions": ["string"]
 }}

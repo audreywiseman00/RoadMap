@@ -35,14 +35,41 @@ class TestExtractedData(unittest.TestCase):
         self.assertEqual(self.data_with_values.source.title, "Test source")
         self.assertEqual([loc.name for loc in self.data_with_values.locations], ["New York", "London"])
         self.assertEqual(self.data_with_values.orgs, ["Company A", "Company B"])
-        self.assertFalse(self.data_with_values.confidence.needs_user_clarification)
+        self.assertTrue(self.data_with_values.confidence.needs_user_clarification)
         self.assertFalse(self.data_with_values.confidence.primary_destination_clear)
+        self.assertEqual(
+            self.data_with_values.confidence.clarification_reason,
+            "Multiple locations detected with no clear primary destination",
+        )
 
     def test_single_location_is_marked_as_clear(self):
         data = ExtractedData(locations=[LocationMention("Paris", "GPE")])
 
         self.assertTrue(data.confidence.primary_destination_clear)
         self.assertFalse(data.confidence.needs_user_clarification)
+
+    def test_unique_frequency_leader_is_marked_as_primary(self):
+        data = ExtractedData(locations=[
+            LocationMention("Tokyo", "GPE", frequency=3),
+            LocationMention("Kyoto", "GPE", frequency=2),
+        ])
+
+        self.assertTrue(data.confidence.primary_destination_clear)
+        self.assertFalse(data.confidence.needs_user_clarification)
+
+    def test_tied_frequency_leaders_require_clarification(self):
+        data = ExtractedData(locations=[
+            LocationMention("Tokyo", "GPE", frequency=3),
+            LocationMention("Kyoto", "GPE", frequency=3),
+            LocationMention("Osaka", "GPE", frequency=1),
+        ])
+
+        self.assertFalse(data.confidence.primary_destination_clear)
+        self.assertTrue(data.confidence.needs_user_clarification)
+        self.assertEqual(
+            data.confidence.clarification_reason,
+            "Multiple locations detected with no clear primary destination",
+        )
 
     def test_get_source(self):
         self.assertEqual(self.data_with_values.get_source().title, "Test source")

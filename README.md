@@ -42,14 +42,28 @@ The current focus. The app accepts article URLs, parses the body text, and extra
 |------|---------|
 | `newspaper4k` | Fetch and clean article body text from URLs |
 | `spaCy` (`en_core_web_sm`) | Named entity recognition and NLP |
-| `BeautifulSoup4` + `requests` | Fallback HTML parsing for tricky sites |
+| `anthropic` | Phase 2 travel-content classification |
+| `BeautifulSoup4` + `requests` | Optional fallback HTML parsing for tricky sites |
 | `playwright` | Headless rendering for JavaScript-heavy pages (optional) |
+
+The implemented parser currently requires `newspaper4k` and spaCy; the classifier requires `anthropic`. The fallback and browser-rendering libraries are not required by the current code.
 
 ### Installation
 
+Use Python 3.10 or newer.
+
 ```bash
-pip install newspaper4k spacy requests beautifulsoup4
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 python -m spacy download en_core_web_sm
+```
+
+For development and tests:
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
 ```
 
 > **Note:** `newspaper4k` depends on `lxml`. If you hit install errors, run:
@@ -157,7 +171,7 @@ The parser returns a structured object passed downstream to the Phase 2 AI layer
   },
   "raw_text": "...",
   "confidence": {
-    "primary_destination_clear": false,
+    "primary_destination_clear": true,
     "needs_user_clarification": false,
     "clarification_reason": null
   }
@@ -166,13 +180,18 @@ The parser returns a structured object passed downstream to the Phase 2 AI layer
 
 Each location carries its own context sentences, so the downstream AI step can cap context per place instead of receiving an unassociated sentence list. Price signals are currently extracted; vibe and season fields are present but remain empty until extraction support is added.
 
+### Destination ambiguity
+
+The parser uses location mention frequency as a simple primary-destination heuristic. No detected locations, or a tie for the highest frequency across multiple locations, sets `needs_user_clarification` and provides a reason. A unique most-mentioned location is marked as the clear primary candidate; the classifier can still identify other locations as secondary destinations. Mention frequency is only a heuristic and does not guarantee semantic importance.
+
 ---
 
 ## Known Limitations (Phase 1)
 
 - **Paywalled articles** — content behind a login will not parse correctly; a user-paste fallback is planned
 - **JavaScript-heavy pages** — some modern travel blogs require `playwright` for full rendering
-- **Vague destination references** — phrases like "the most magical place I've ever been" won't resolve to a location; a user-confirmation prompt is planned for low-confidence extractions
+- **Destination ambiguity** — when multiple locations are mentioned equally often, the parser requests user clarification; a unique frequency leader is treated as the primary candidate even if context is ambiguous
+- **Vague destination references** — phrases like "the most magical place I've ever been" won't resolve to a location and require user clarification
 - **Multi-language content** — the `en_core_web_sm` model is English only; multi-language support is a Phase 2+ consideration
 
 ---
@@ -183,12 +202,22 @@ Each location carries its own context sentences, so the downstream AI step can c
 vacation-planner/
 ├── README.md
 ├── requirements.txt
-├── article_parser/
+├── requirements-dev.txt
+├── classifier/
 │   ├── __init__.py
-│   ├── article_parser.py        # newspaper4k fetching and cleaning
+│   ├── models.py
+│   ├── pipeline.py
+│   ├── prompt_builder.py
+│   └── tests/
+├── parser/
+│   ├── __init__.py
+│   ├── article.py
+│   ├── models.py
+│   ├── pipeline.py
+│   └── tests/
 ├── tests/
-│   └── test_parser.py
-└── main.py
+│   └── e2e/
+└── pytest.ini
 ```
 
 ---

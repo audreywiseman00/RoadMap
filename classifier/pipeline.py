@@ -85,29 +85,64 @@ class ClassificationPipeline:
 
     def _validate_response(self, data: dict) -> bool:
         required = [
-            "primary_destination", "trip_type", "budget_tier",
-            "recommended_days", "top_activities", "confidence",
-            "needs_clarification"
+            "primary_destination",
+            "secondary_destinations",
+            "trip_type",
+            "budget_tier",
+            "recommended_days",
+            "top_activities",
+            "confidence",
+            "needs_clarification",
+            "clarification_questions",
         ]
-        if not all(k in data for k in required):
+        if not isinstance(data, dict) or not all(k in data for k in required):
             return False
         if data["trip_type"] not in [t.value for t in TripType]:
             return False
         if data["budget_tier"] not in [b.value for b in BudgetTier]:
             return False
+
+        if not isinstance(data["primary_destination"], str):
+            return False
+        if not self._is_string_list(data["secondary_destinations"]):
+            return False
+        if (
+            isinstance(data["recommended_days"], bool)
+            or not isinstance(data["recommended_days"], int)
+            or data["recommended_days"] < 0
+        ):
+            return False
+        if not self._is_string_list(data["top_activities"]):
+            return False
+
+        confidence = data["confidence"]
+        if (
+            isinstance(confidence, bool)
+            or not isinstance(confidence, (int, float))
+            or not 0 <= confidence <= 1
+        ):
+            return False
+        if not isinstance(data["needs_clarification"], bool):
+            return False
+        if not self._is_string_list(data["clarification_questions"]):
+            return False
         return True
+
+    @staticmethod
+    def _is_string_list(value: object) -> bool:
+        return isinstance(value, list) and all(isinstance(item, str) for item in value)
 
     def _parse_result(self, data: dict) -> ClassificationResult:
         return ClassificationResult(
             primary_destination=data["primary_destination"],
-            secondary_destinations=data.get("secondary_destinations", []),
+            secondary_destinations=data["secondary_destinations"],
             trip_type=TripType(data["trip_type"]),
             budget_tier=BudgetTier(data["budget_tier"]),
             recommended_days=data["recommended_days"],
             top_activities=data["top_activities"],
             confidence=data["confidence"],
             needs_clarification=data["needs_clarification"],
-            clarification_questions=data.get("clarification_questions", [])
+            clarification_questions=data["clarification_questions"]
         )
 
     def _needs_clarification(

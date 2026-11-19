@@ -92,6 +92,8 @@ class TestArticleParser(unittest.TestCase):
         locations = {location.name: location for location in result.locations}
         self.assertEqual(list(locations), ["Paris", "London"])
         self.assertEqual(locations["Paris"].frequency, 2)
+        self.assertTrue(result.confidence.primary_destination_clear)
+        self.assertFalse(result.confidence.needs_user_clarification)
         self.assertEqual(
             locations["Paris"].context,
             ["Paris and London are cities.", "Paris is known for its cafes."],

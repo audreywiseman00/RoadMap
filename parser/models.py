@@ -46,10 +46,20 @@ class ExtractedData:
     confidence: Confidence = field(init=False, default_factory=Confidence)
 
     def __post_init__(self):
-        self.confidence.primary_destination_clear = len(self.locations) == 1
-        self.confidence.needs_user_clarification = not self.locations
+        if not self.locations:
+            self.confidence.clarification_reason = "No locations detected"
+            self.confidence.needs_user_clarification = True
+            return
+
+        frequencies = [location.frequency for location in self.locations]
+        highest_frequency = max(frequencies)
+        has_unique_leader = frequencies.count(highest_frequency) == 1
+        self.confidence.primary_destination_clear = has_unique_leader
+        self.confidence.needs_user_clarification = not has_unique_leader
         self.confidence.clarification_reason = (
-            "No locations detected" if not self.locations else None
+            None
+            if has_unique_leader
+            else "Multiple locations detected with no clear primary destination"
         )
 
     def get_source(self):
